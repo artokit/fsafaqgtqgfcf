@@ -129,7 +129,7 @@ class Comment(models.Model):
     product = models.TextField()
     nickname = models.CharField(max_length=150)
     published = models.CharField(max_length=150)
-    content = models.TextField()
+    content = models.TextField(unique=True)
     city = models.CharField(max_length=150)
     star_count = models.IntegerField()
     image = models.ImageField(default='default_avatar2.jpeg')

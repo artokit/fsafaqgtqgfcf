@@ -10,7 +10,8 @@ from .utils import *
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .df import *
+from .parser_comments import start_parse_comment
+# start_parse_comment()
 # from .shop_parser import process
 # process()
 # thread_shop.start()
@@ -97,7 +98,15 @@ class ShopItem(LoginRequiredMixin, ShopRateMixin, ReviewTopMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(ShopItem, self).get_context_data(**kwargs)
-        context['locations'] = self.get_locations()
+
+        context['locations'], context['type_order'] = self.get_locations()
+
+        try:
+            city = City.objects.get(uuid=self.request.GET.get('city')).name.split('(')[0].strip()
+        except City.DoesNotExist:
+            city = None
+        if city:
+            context['locations'].
         context.update(self.get_review_context(self.shop.name))
         context['comments'] = Comment.objects.filter(shop=self.shop, product=self.object.title)
         context['summary'] = self.get_summary_rate()
@@ -107,13 +116,14 @@ class ShopItem(LoginRequiredMixin, ShopRateMixin, ReviewTopMixin, DetailView):
         type_order = self.request.GET.get('type')
 
         if type_order:
-            return self.object.locations.filter(buy_type=['ins', 'pre'][type_order == 'pre-order'])
+            type_order = ['ins', 'pre'][type_order == 'pre-order']
+            return self.object.locations.filter(buy_type=type_order), 'instant' if type_order == 'ins' else 'pre-order'
 
         obj = self.object.locations.filter(buy_type='ins')
         if obj:
-            return obj
+            return obj, 'instant'
         else:
-            return self.object.locations.filter(buy_type='pre')
+            return self.object.locations.filter(buy_type='pre'), 'pre-order'
 
 
 class CommentsView(LoginRequiredMixin, ShopRateMixin, ReviewTopMixin, ListView):
